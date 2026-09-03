@@ -1,10 +1,10 @@
-# apportion
+# allot
 
 Split a whole number of units across buckets in proportion to weights, when some
 buckets have a floor, some have a ceiling, and the total has to come out exact.
 
 ```python
-from apportion import allocate
+from allot import allocate
 
 allocate(100, {"a": 0.5, "b": 0.3, "c": 0.2})
 # {'a': 50, 'b': 30, 'c': 20}
@@ -19,7 +19,7 @@ Pure Python, no dependencies, one function.
 
 Proportional splits produce fractions, and units are whole. Rounding each bucket
 independently does not sum back to the total: three buckets at 33.3% of 100 round
-to 33 each and lose a unit. The standard fix is largest-remainder — floor
+to 33 each and lose a unit. The standard fix is largest-remainder: floor
 everything, then hand the leftover units to the largest fractional parts.
 
 Constraints are where it gets awkward. Real buckets have rules: never send fewer
@@ -29,21 +29,21 @@ during the rounding step, and that is the move that breaks the total.
 ## Why the ordering matters
 
 This library exists because of that mistake. In the tool it came out of, the
-minimum was applied inside the floor calculation — every bucket got
+minimum was applied inside the floor calculation, so every bucket got
 `max(floor(share), 1)`. It reads as reasonable and it is fine at scale. Then a
 total of 1 was split across 8 buckets and the function returned 8 units, having
 invented seven of them out of a rounding rule.
 
 `allocate` orders the work so the sum is exact by construction:
 
-1. **Satisfy every floor first**, before anything proportional happens. If the
+1. Satisfy every floor first, before anything proportional happens. If the
    floors already exceed the total, that is infeasible and it raises, rather than
    quietly returning more than it was given.
-2. **Apportion what is left** among buckets that still have room. Buckets that
+2. Apportion what is left among buckets that still have room. Buckets that
    would exceed their ceiling are filled to the ceiling and dropped, and their
    surplus is redistributed among the rest. That repeats until nothing more caps
    out, which is water-filling.
-3. **Integerise last**, by largest remainder, skipping anything already at its
+3. Integerise last, by largest remainder, skipping anything already at its
    ceiling.
 
 The result sums to `total` exactly, or you get an `AllocationError` explaining
@@ -53,7 +53,7 @@ asserted before returning.
 ## Install
 
 ```
-pip install git+https://github.com/o-liverschwartz/apportion
+pip install git+https://github.com/o-liverschwartz/allot
 ```
 
 ## Use
@@ -91,7 +91,7 @@ has to add up to the buy, because the warehouse ships what the number says.
 
 That tool is JavaScript and has its own implementation; this is the routine
 rewritten as a standalone Python package with the ordering fixed and the
-constraint handling generalised. The same shape turns up well outside retail —
+constraint handling generalised. The same shape turns up well outside retail:
 seats to parties, budget to departments, requests to workers, samples to strata.
 
 ## Tests
@@ -100,9 +100,9 @@ seats to parties, budget to departments, requests to workers, samples to strata.
 python -m pytest
 ```
 
-The suite checks the guarantee that matters — output sums to `total`, floors and
-ceilings are respected, or it raises — including against randomised inputs, plus
-the specific case that motivated the library.
+The suite checks the guarantee that matters: output sums to `total` and floors
+and ceilings are respected, or it raises. That runs against randomised inputs as
+well as the specific case that motivated the library.
 
 ## Licence
 

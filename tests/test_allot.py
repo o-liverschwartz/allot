@@ -4,7 +4,7 @@ import random
 
 import pytest
 
-from apportion import AllocationError, allocate
+from allot import AllocationError, allocate
 
 
 def check(result, total, weights, minima=None, maxima=None):
