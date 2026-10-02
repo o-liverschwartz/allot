@@ -13,8 +13,6 @@ allocate(24, curve, minima={s: 1 for s in curve}, maxima={"10": 6})
 
 24 pairs, six sizes, a floor of 1 on every size, and room for only 6 on size 10. On weight alone size 10 would take 7.45 pairs. The shelf holds 6, so it stops there and the extra 1.45 spills to the other sizes in proportion to their weights. Size 13 then comes to 0.9 of a pair, under its floor, so it sits at 1. The result is whole numbers and adds up to 24.
 
-[Oliver: pairs and shoe sizes in this example. Too close to the business for a public README, or keep them?]
-
 An impossible request raises instead of returning something close:
 
 ```python
@@ -26,13 +24,9 @@ allocate(1, {c: 1 for c in "abcdefgh"}, minima={c: 1 for c in "abcdefgh"})
 
 I built a replenishment tool that decides how many pairs of a shoe go to each size. A size curve gives the weights. The buy gives the total. Every size has a floor, because a size on the shelf needs one behind it, and a ceiling, because the shelf is finite. The warehouse ships exactly what the number says, so the sizes have to add up to the buy.
 
-Rounding each size on its own does not add up. My first version applied the minimum inside the rounding step, so every size got at least one pair. Then one pair was split across eight sizes and the function returned eight. It invented seven pairs out of a rounding rule.
-
-[Oliver: did it happen that way, in your first version? If not, what really happened, in one or two sentences?]
+Rounding each size on its own does not add up. If the minimum is applied inside the rounding step, every size gets at least one pair even when there aren't enough pairs to go around. Split one pair across eight sizes and you get eight back.
 
 allot holds any bucket at its floor or ceiling, splits the rest by weight, and rounds last. If the request is impossible it raises. It does not return a wrong number.
-
-[Oliver: does the JavaScript engine in Replenish add a floor on top of a proportional share, or clamp to the floor like 0.2.0 does?]
 
 ## Install and run
 
@@ -69,8 +63,6 @@ python -m pytest
 ```
 
 The suite checks that the output sums to `total` and respects every floor and ceiling, or the call raises. A randomised test also checks that a request that can be met is never refused, and that every bucket lands within one unit of its exact share.
-
-[Oliver: keep the `Co-Authored-By: Claude` trailers on commits, and say here how you used AI on this library?]
 
 ## License
 
