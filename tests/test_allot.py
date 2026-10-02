@@ -142,3 +142,88 @@ def test_holds_up_under_random_input():
             # Refusing is a valid outcome; returning a wrong answer is not.
             continue
         check(result, total, weights, minima, maxima)
+
+
+# --- added in the fix pass: one test per bug ---------------------------------
+
+@pytest.mark.parametrize("bad", [float("nan"), float("inf")])
+def test_non_finite_weights_raise(bad):
+    with pytest.raises(AllocationError, match="finite"):
+        allocate(10, {"a": bad, "b": 1})
+
+
+def test_a_fractional_total_raises_allocation_error():
+    with pytest.raises(AllocationError, match="whole number"):
+        allocate(10.5, {"a": 1, "b": 1})
+
+
+def test_a_fractional_floor_is_refused_not_truncated():
+    with pytest.raises(AllocationError, match="whole number"):
+        allocate(10, {"a": 1, "b": 1}, minima={"a": 2.9})
+
+
+def test_an_infinite_ceiling_raises_allocation_error():
+    with pytest.raises(AllocationError, match="whole number"):
+        allocate(10, {"a": 1, "b": 1}, maxima={"a": float("inf")})
+
+
+def test_a_bool_total_is_refused():
+    with pytest.raises(AllocationError, match="whole number"):
+        allocate(True, {"a": 1, "b": 1})
+
+
+def test_a_bound_on_a_bucket_with_no_weight_raises():
+    # A typo in a key used to drop the constraint without a word.
+    with pytest.raises(AllocationError, match="no weight"):
+        allocate(10, {"a": 1, "b": 1}, minima={"c": 9})
+
+
+def test_totals_past_float_precision_still_add_up():
+    total = 10**18 + 7
+    assert sum(allocate(total, {"a": 1, "b": 2, "c": 3}).values()) == total
+
+
+def test_a_floor_lifts_a_bucket_to_its_floor_and_no_further():
+    # c carries 80% of the weight and gets 80% of the units. a and b sit at
+    # their floor instead of taking a proportional share on top of it.
+    weights, minima = {"a": 1, "b": 1, "c": 8}, {"a": 2, "b": 2}
+    assert allocate(10, weights, minima=minima) == {"a": 2, "b": 2, "c": 6}
+    # 0.1.0 returned 11/11/78 here.
+    small = allocate(100, {"a": 1, "b": 1, "c": 98}, minima={"a": 10, "b": 10})
+    assert small == {"a": 10, "b": 10, "c": 80}
+
+
+def test_zero_weight_buckets_are_not_used_as_overflow():
+    with pytest.raises(AllocationError, match="zero-weight"):
+        allocate(10, {"a": 1, "b": 0}, maxima={"a": 2})
+
+
+def test_feasible_requests_are_never_refused_and_stay_near_the_exact_share():
+    """Refusing a request that can be met is a bug too. And every bucket lands
+    within one unit of its exact clamped share, found here by bisection."""
+    from fractions import Fraction as F
+
+    rng = random.Random(20260929)
+    for _ in range(500):
+        n = rng.randint(1, 8)
+        keys = [f"k{i}" for i in range(n)]
+        weights = {k: rng.randint(1, 100) for k in keys}
+        minima = {k: rng.randint(0, 4) for k in keys if rng.random() < 0.5}
+        maxima = {k: rng.randint(0, 15) for k in keys if rng.random() < 0.5}
+        total = rng.randint(0, 150)
+        lo = {k: minima.get(k, 0) for k in keys}
+        hi = {k: maxima.get(k, 10**9) for k in keys}
+        if any(hi[k] < lo[k] for k in keys) or not sum(lo.values()) <= total <= sum(hi.values()):
+            continue
+        result = allocate(total, weights, minima=minima, maxima=maxima)
+        check(result, total, weights, minima, maxima)
+
+        def clamped(x, weights=weights, lo=lo, hi=hi, keys=keys):
+            return {k: min(max(x * weights[k], lo[k]), hi[k]) for k in keys}
+
+        a, b = F(0), F(10**6)
+        for _ in range(60):
+            mid = (a + b) / 2
+            a, b = (mid, b) if sum(clamped(mid).values()) < total else (a, mid)
+        exact = clamped(b)
+        assert all(abs(result[k] - exact[k]) < 1 + F(1, 10**6) for k in keys)
