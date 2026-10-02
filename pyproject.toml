@@ -1,21 +1,26 @@
 [build-system]
-requires = ["setuptools>=61"]
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "allot"
-version = "0.1.0"
-description = "Distribute whole units in proportion to weights, with per-bucket floors and ceilings and an exact total."
+version = "0.2.0"
+description = "Split whole units in proportion to weights, with per-bucket floors and ceilings and an exact total."
 readme = "README.md"
 requires-python = ">=3.10"
-license = { file = "LICENSE" }
+license = "MIT"
+license-files = ["LICENSE"]
 authors = [{ name = "Oliver Schwartz" }]
 keywords = ["apportionment", "largest-remainder", "allocation", "rounding", "integer-partition"]
 classifiers = [
   "Development Status :: 4 - Beta",
   "Intended Audience :: Developers",
-  "License :: OSI Approved :: MIT License",
   "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Typing :: Typed",
   "Topic :: Scientific/Engineering :: Mathematics",
 ]
 dependencies = []
@@ -25,10 +30,13 @@ Homepage = "https://github.com/o-liverschwartz/allot"
 Issues = "https://github.com/o-liverschwartz/allot/issues"
 
 [project.optional-dependencies]
-test = ["pytest>=7"]
+test = ["pytest>=7", "ruff"]
 
 [tool.setuptools.packages.find]
 include = ["allot*"]
+
+[tool.setuptools.package-data]
+allot = ["py.typed"]
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
